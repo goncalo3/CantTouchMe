@@ -1,0 +1,140 @@
+volumes:
+  mysql_data:
+
+networks:
+  canttouchme:
+    name: canttouchme
+    driver: bridge
+  proxy:
+    external: true
+
+services:
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    environment:
+      - API_PORT=${API_PORT}
+      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      - ENVIRONMENT=development
+      - LOG_LEVEL=${LOG_LEVEL}
+    volumes:
+      - ./backend:/app             # Mount project files for hot reload
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - canttouchme
+    profiles:
+      - dev
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      ENVIRONMENT: development
+      API_URL: ${API_URL}
+    ports:
+      - "80:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - canttouchme
+    profiles:
+      - dev
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - canttouchme
+    profiles:
+      - dev
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "--password=${MYSQL_PASSWORD}", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  # ===============================================================================#
+  # ========================= IGNORE FROM HERE =================================== #
+  # ================ ONLY MATTERS FOR PROD DEPLOYMENT =============================#
+  # ===============================================================================#
+  frontend-prod:
+    ports:
+      - 80:80
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    environment:
+      ENVIRONMENT: production
+      API_URL: ${API_URL}
+    networks:
+      - proxy
+    profiles:
+      - prod
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+
+      # Define an HTTPS router for port 443
+      - "traefik.http.routers.canttouchme.entrypoints=https"
+
+      # Set the domain for HTTPS routing
+      - "traefik.http.routers.canttouchme.rule=Host(`canttouchme.goncalo3.pt`)"
+
+      # Enable TLS (HTTPS)
+      - "traefik.http.routers.canttouchme.tls=true"
+
+      # Specify which port the application is running on inside the container
+      - "traefik.http.services.canttouchme.loadbalancer.server.port=80"
+
+  backend-prod:
+    ports:
+      - 3000:3000
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    environment:
+      - API_PORT=${API_PORT}
+      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      - ENVIRONMENT=production
+      - LOG_LEVEL=${LOG_LEVEL}
+    networks:
+      - proxy
+    profiles:
+      - prod
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+
+      # Define an HTTPS router for API 
+      - "traefik.http.routers.canttouchme-api.entrypoints=https"
+      
+      # Set the domain and path for API routing
+      - "traefik.http.routers.canttouchme-api.rule=Host(`canttouchme.goncalo3.pt`) && PathPrefix(`/api`)"
+      
+      # Enable TLS (HTTPS)
+      - "traefik.http.routers.canttouchme-api.tls=true"
+      
+      # Configure the middleware for path stripping
+      - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/api"
+      
+      # Apply the middleware to the API router
+      - "traefik.http.routers.canttouchme-api.middlewares=api-strip"
+      
+      # Specify which port the application is running on inside the container
+      - "traefik.http.services.canttouchme-api.loadbalancer.server.port=${API_PORT}"

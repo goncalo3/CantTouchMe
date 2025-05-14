@@ -1,0 +1,31 @@
+# Builder stage
+FROM oven/bun:1 AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies using Bun
+RUN bun install
+
+# Copy the rest of the source code
+COPY . .
+
+# Set environment variable
+ENV ENVIRONMENT=production
+
+# Run production build
+RUN bun run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built files from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose default HTTP port
+EXPOSE 80
+
+# Run nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]

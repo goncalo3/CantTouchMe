@@ -1,0 +1,15 @@
+FROM golang:alpine
+
+WORKDIR /app
+
+# Copy dependency files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Expose API port
+EXPOSE 3000
+
+# Run the application
+CMD ["go", "run", "main.go"]

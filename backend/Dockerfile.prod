@@ -1,0 +1,33 @@
+# Builder stage
+FROM golang:alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Production stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Set environment variable
+ENV ENVIRONMENT=production
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/main .
+
+# Expose API port
+EXPOSE 3000
+
+# Run the application
+CMD ["./main"]
