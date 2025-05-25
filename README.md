@@ -1,48 +1,66 @@
 # CantTouchMe Project 🚀
 
-This project consists of a backend (Go) and frontend (Vue.js) application with development and production configurations.
+Este projeto consiste numa aplicação com backend em **Go** e frontend em **Vue.js**, com configurações separadas para desenvolvimento e produção.
 
-## Warning ⚠️
+🌐 **Aplicação em Produção:** [https://canttouchme.goncalo3.pt](https://canttouchme.goncalo3.pt)
 
-**Important:** Only work on the `dev` branch. All changes to the `prod` branch will be automatically built and deployed.
+## 📚 Contexto Académico
 
-## Docker Compose Commands
+Projeto desenvolvido no âmbito da **Licenciatura em Engenharia Informática** da **Universidade da Beira Interior**, na unidade curricular de **Segurança Informática**.
 
-### Development Environment
+## ⚠️ Aviso Importante
 
-To start the development environment (includes hot-reloading for the frontend):
+Trabalhar **apenas** na branch `dev`. Todas as alterações na branch `prod` serão automaticamente colocadas em produção.
+
+## 🐳 Comandos Docker Compose
+
+### Ambiente de Desenvolvimento
+
+Para iniciar o ambiente de desenvolvimento (com hot-reload para o frontend e backend):
 
 ```bash
 docker compose --profile dev up --build
-```
+````
 
-To stop the development environment:
+Para parar o ambiente de desenvolvimento:
 
 ```bash
 docker compose --profile dev down
 ```
 
-## Additional Commands 🛠️
-
-To view logs:
+### Ver Logs
 
 ```bash
 docker compose logs -f
 ```
 
-## Environment Configuration
+## 🔐 Configuração do Ambiente
 
-This project uses environment variables which should be defined in a `.env` file at the root of the project. The following variables are used:
+Para correr a aplicação, é necessário criar um ficheiro `.env` com base no modelo:
 
-- `API_PORT`: Port for the backend API
-- `MYSQL_ROOT_PASSWORD`: Root password for MySQL
-- `MYSQL_DATABASE`: MySQL database name
-- `MYSQL_USER`: MySQL username
-- `MYSQL_PASSWORD`: MySQL password
-- `LOG_LEVEL`: Logging level for the backend
+```bash
+cp .env.template .env
+```
 
-## Project Structure 📂
+Para gerar uma chave segura para o JWT, usa:
 
-- `backend/`: Go API server
-- `frontend/`: Vue.js web application
-- `db/`: Database initialization scripts
+```bash
+openssl rand -base64 32
+```
+
+Copia o valor gerado para a variável JWT no teu `.env`.
+
+## 📁 Estrutura do Projeto
+
+* `backend/`: Servidor API em Go
+* `frontend/`: Aplicação web em Vue.js
+* `db/`: Scripts de inicialização da base de dados
+
+## 👥 Autores
+
+* Carolina Fernandes - Nº Aluno 50252
+* Beatriz Laranjinha - Nº Aluno 50521
+* Diogo Araújo       - Nº Aluno 49680
+* Diogo Rodrigues    - Nº Aluno 49658
+* Gonçalo Moreira    - Nº Aluno 49447
+* Rodrigo Esteves    - Nº Aluno 49454

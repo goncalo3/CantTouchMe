@@ -1,43 +1,38 @@
 package config
 
-import (
-	"os"
-	"strconv"
-)
+var cfg *Config
 
 // Config holds all configuration for our application
 type Config struct {
-	Port        int
-	Environment string
-	LogLevel    string
-	DatabaseURL string
+	Port                    int
+	Environment             string
+	JWTSecret               string
+	JWTExpiration           int // JWT expiration time in seconds
+	ChallengeCleanupMinutes int // Challenge cleanup interval in minutes
 }
 
 // LoadConfig loads the configuration from environment variables
+// Reurns - a pointer to Config struct
 func LoadConfig() *Config {
-	config := &Config{
-		Port:        getEnvAsInt("API_PORT", 3000),
-		Environment: getEnv("ENVIRONMENT", "development"),
-		LogLevel:    getEnv("LOG_LEVEL", "info"),
-		DatabaseURL: getEnv("DATABASE_URL", ""),
+	if cfg != nil {
+		return cfg
 	}
-	
-	return config
+
+	cfg = &Config{
+		Port:                    getEnvAsInt("API_PORT", 3000),
+		Environment:             getEnv("ENVIRONMENT", "development"),
+		JWTSecret:               getEnv("JWT_SECRET", "DEFAULT_JWT_DO_NOT_USE_IN_PRODUCTION"),
+		JWTExpiration:           getEnvAsInt("JWT_EXPIRATION_SECONDS", 3600),  // Default to 1 hour
+		ChallengeCleanupMinutes: getEnvAsInt("CHALLENGE_CLEANUP_MINUTES", 15), // Default to 15 minutes
+	}
+
+	return cfg
 }
 
-// Helper function to get an environment variable with a default value
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+// GetConfig returns the current configuration without reloading from environment
+func GetConfig() *Config {
+	if cfg == nil {
+		return LoadConfig()
 	}
-	return defaultValue
-}
-
-// Helper function to get an environment variable as an integer
-func getEnvAsInt(key string, defaultValue int) int {
-	valueStr := getEnv(key, "")
-	if value, err := strconv.Atoi(valueStr); err == nil {
-		return value
-	}
-	return defaultValue
+	return cfg
 }

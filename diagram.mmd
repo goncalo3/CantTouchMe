@@ -1,0 +1,107 @@
+flowchart TD
+    A[User Access Application] --> B{User Authenticated?}
+
+    B -->|No| C[Navigate to Login Page]
+    C --> D[Enter Email & Password]
+    D --> E[Frontend requests login challenge]
+    E --> F[Backend generates challenge and retrieve login_salt]
+    F --> G[Frontend derives private key from password + salt]
+    G --> H[Frontend signs challenge with Ed25519]
+    H --> I[Frontend sends signed challenge]
+    I --> J{Valid signature?}
+
+    J -->|No| K[Display login error]
+    K --> L[End]
+
+    J -->|Yes| M[Backend sets HTTP-only cookie]
+    M --> N[Frontend stores user in userStore]
+    N --> O[Fetch and decrypt note titles]
+    O --> P[Load dashboard with sidebar]
+
+    B -->|Yes| P
+
+    P --> Q[Display Note Form & Sidebar]
+
+    Q --> R{User Action}
+
+    R -->|New Note| S[User clicks New Note]
+    S --> T[Initialize empty note form]
+    T --> U[Focus on title input]
+    U --> V[Continue editing]
+
+    R -->|Select Existing| W[User selects existing note]
+    W --> X[Show password modal]
+    X --> Y[Enter decryption password]
+    Y --> Z[Fetch encrypted note blocks]
+    Z --> AA[Decrypt note content]
+    AA --> BB{Verify block integrity?}
+    BB -->|Invalid| CC[No longer allow changes]
+    BB -->|Valid| DD[Mark as valid]
+    CC --> EE[Display decrypted note]
+    DD --> EE
+    EE --> V
+
+    R -->|Account| FF[User clicks Account]
+    FF --> GG[Display account settings]
+    GG --> HH[User modifies name/email]
+    HH --> II[Submit changes]
+    II --> JJ[Update user via API]
+    JJ --> KK[Update userStore]
+    KK --> V
+
+    R -->|Logout| LL[User clicks Logout]
+    LL --> MM[Call logout API]
+    MM --> NN[Clear HTTP-only cookie]
+    NN --> OO[Clear userStore & noteTitleStore]
+    OO --> PP[Redirect to login]
+    PP --> L
+
+    V --> QQ{User wants to save note?}
+
+    QQ -->|Yes| RR[User clicks Save]
+    RR --> SS{Note content empty?}
+    SS -->|Yes| TT[Show error message]
+    TT --> L
+
+    SS -->|No| UU[Show password modal]
+    UU --> VV[Enter encryption password]
+    VV --> WW[Derive encryption key from password + salt]
+    WW --> XX[Encrypt title and body]
+    XX --> YY[Calculate HMAC for integrity]
+    YY --> ZZ[Create block with prev_hash]
+    ZZ --> AAA{New note?}
+
+    AAA -->|Yes| BBB[Call createNote API]
+    BBB --> CCC[Backend creates new note]
+    CCC --> DDD[Add to noteTitleStore]
+    DDD --> EEE[Reset form]
+    EEE --> V
+
+    AAA -->|No| FFF[Call editNote API]
+    FFF --> GGG[Backend adds new block]
+    GGG --> HHH[Update noteTitleStore]
+    HHH --> III[Update hash in form]
+    III --> V
+
+    QQ -->|No| V
+
+    V --> JJJ{User wants to delete note?}
+
+    JJJ -->|Yes| KKK[Show confirmation dialog]
+    KKK --> LLL{Confirmed?}
+    LLL -->|Yes| MMM[Call deleteNote API]
+    MMM --> NNN[Remove from noteTitleStore]
+    NNN --> OOO[Reset form]
+    OOO --> V
+
+    LLL -->|No| PPP[Cancel deletion]
+    PPP --> V
+
+    JJJ -->|No| V
+
+    style A fill:#e1f5fe
+    style L fill:#ffebee
+    style K fill:#ffebee
+    style TT fill:#ffebee
+    style CC fill:#fff3e0
+    style DD fill:#e8f5e8

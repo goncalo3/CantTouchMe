@@ -18,8 +18,11 @@ services:
     environment:
       - API_PORT=${API_PORT}
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
+      - MYSQL_HOST=db
       - ENVIRONMENT=development
-      - LOG_LEVEL=${LOG_LEVEL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_SECONDS=${JWT_EXPIRATION_SECONDS}
+      - CHALLENGE_CLEANUP_MINUTES=${CHALLENGE_CLEANUP_MINUTES}
     volumes:
       - ./backend:/app             # Mount project files for hot reload
     depends_on:
@@ -48,6 +51,7 @@ services:
       - dev
   db:
     image: mysql:8.0
+    hostname: db 
     ports:
       - "3306:3306"
     environment:
@@ -63,7 +67,7 @@ services:
     profiles:
       - dev
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "--password=${MYSQL_PASSWORD}", "--silent"]
+      test: ["CMD", "sh", "-c", "mysql -h localhost -u ${MYSQL_USER} --password=${MYSQL_PASSWORD} -e 'USE ${MYSQL_DATABASE}; SHOW TABLES LIKE \"blocks\";' | grep -q blocks"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -74,14 +78,7 @@ services:
   # ================ ONLY MATTERS FOR PROD DEPLOYMENT =============================#
   # ===============================================================================#
   frontend-prod:
-    ports:
-      - 80:80
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-    environment:
-      ENVIRONMENT: production
-      API_URL: ${API_URL}
+    image: "ghcr.io/goncalo3/canttouchme-frontend:latest"
     networks:
       - proxy
     profiles:
@@ -103,16 +100,15 @@ services:
       - "traefik.http.services.canttouchme.loadbalancer.server.port=80"
 
   backend-prod:
-    ports:
-      - 3000:3000
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+    image: "ghcr.io/goncalo3/canttouchme-backend:latest"
     environment:
       - API_PORT=${API_PORT}
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
-      - ENVIRONMENT=production
-      - LOG_LEVEL=${LOG_LEVEL}
+      - MYSQL_HOST=db
+      - ENVIRONMENT=development
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_SECONDS=${JWT_EXPIRATION_SECONDS}
+      - CHALLENGE_CLEANUP_MINUTES=${CHALLENGE_CLEANUP_MINUTES}
     networks:
       - proxy
     profiles:

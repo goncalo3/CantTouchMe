@@ -1,0 +1,142 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant DB as Database
+    participant Store as UserStore/NoteTitleStore
+
+    Note over U,Store: Authentication Flow
+    U->>F: Access Application
+    F->>F: Check authentication status
+    
+    alt User not authenticated
+        F->>U: Show login page
+        U->>F: Enter email & password
+        F->>B: Request login challenge
+        B->>B: Generate challenge + login_salt
+        B->>F: Return challenge + salt
+        F->>F: Derive private key from password + salt
+        F->>F: Sign challenge with Ed25519
+        F->>B: Send signed challenge
+        B->>B: Verify signature
+        
+        alt Valid signature
+            B->>B: Set HTTP-only cookie
+            B->>F: Authentication success
+            F->>Store: Store user in userStore
+            F->>B: Fetch note titles
+            B->>DB: Query note titles
+            DB->>B: Return encrypted titles
+            B->>F: Return titles
+            F->>F: Decrypt note titles
+            F->>Store: Store in noteTitleStore
+        else Invalid signature
+            B->>F: Authentication failed
+            F->>U: Display login error
+        end
+    end
+
+    F->>U: Display dashboard with sidebar
+
+    Note over U,Store: Note Operations
+    loop User interactions
+        alt New Note
+            U->>F: Click "New Note"
+            F->>F: Initialize empty note form
+            F->>F: Focus on title input
+            
+        else Select Existing Note
+            U->>F: Select existing note
+            F->>U: Show password modal
+            U->>F: Enter decryption password
+            F->>B: Fetch encrypted note blocks
+            B->>DB: Query note blocks
+            DB->>B: Return encrypted blocks
+            B->>F: Return blocks
+            F->>F: Decrypt note content
+            F->>F: Verify block integrity (HMAC + hash chain)
+            
+            alt Integrity valid
+                F->>F: Mark as valid
+            else Integrity invalid
+                F->>F: Mark as integrity violation
+                F->>U: Show integrity warning
+            end
+            
+            F->>U: Display decrypted note
+            
+        else Save Note
+            U->>F: Click Save
+            F->>F: Validate note content
+            
+            alt Content empty
+                F->>U: Show error message
+            else Content valid
+                F->>U: Show password modal
+                U->>F: Enter encryption password
+                F->>F: Derive encryption key from password + salt
+                F->>F: Encrypt title and body
+                F->>F: Calculate HMAC for integrity
+                F->>F: Create block with prev_hash
+                
+                alt New note
+                    F->>B: Call createNote API
+                    B->>DB: Insert new note
+                    DB->>B: Return note ID + timestamp
+                    B->>F: Return success
+                    F->>Store: Add to noteTitleStore
+                    F->>F: Reset form
+                else Existing note
+                    F->>B: Call editNote API
+                    B->>DB: Validate blockchain integrity
+                    alt Chain is valid
+                        DB->>DB: Insert new block
+                        DB->>B: Return timestamp
+                        B->>F: Return success
+                        F->>Store: Update noteTitleStore
+                        F->>F: Update hash in form
+                    else Chain is invalid
+                        DB->>B: Return integrity error
+                        B->>F: Show error message
+                    end
+                end
+            end
+            
+        else Delete Note
+            U->>F: Click Delete
+            F->>U: Show confirmation dialog
+            U->>F: Confirm deletion
+            F->>B: Call deleteNote API
+            B->>DB: Delete note
+            DB->>B: Confirm deletion
+            B->>F: Return success
+            F->>Store: Remove from noteTitleStore
+            F->>F: Reset form
+            
+        else Account Management
+            U->>F: Click Account
+            F->>U: Display account settings
+            U->>F: Modify name/email
+            U->>F: Submit changes
+            F->>B: Update user API
+            B->>DB: Update user data
+            DB->>B: Confirm update
+            B->>F: Return updated user
+            F->>Store: Update userStore
+            
+        else Logout
+            U->>F: Click Logout
+            F->>B: Call logout API
+            B->>B: Clear HTTP-only cookie
+            B->>F: Logout success
+            F->>Store: Clear userStore & noteTitleStore
+            F->>U: Redirect to login
+        end
+    end
+
+    Note over U,Store: Security Features
+    Note right of F: - Client-side encryption before sending
+    Note right of F: - HMAC verification for integrity
+    Note right of F: - Hash chain validation
+    Note right of F: - HTTP-only cookie auth
+    Note right of F: - Ed25519 challenge-response

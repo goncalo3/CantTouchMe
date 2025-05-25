@@ -1,1 +1,30 @@
+# Environment variables
 .env
+.DS_store
+
+# Air hot reload artifacts
+backend/tmp/
+backend/tmp/main
+backend/tmp/*
+
+# Go artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Docker volumes
+mysql_data/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo

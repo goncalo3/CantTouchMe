@@ -1,0 +1,69 @@
+flowchart TD
+    A[Attacker Gains DB Access] --> B[Attempts to Modify Note Content]
+    A --> C[Attempts to Delete Note Data]
+    
+    B --> D{Data Integrity Checks}
+    D --> D1[Hash Verification]
+    D --> D2[MAC Validation]
+    D --> D3[Ed25519 Signature Verification]
+    
+    D1 --> E{Hash Valid?}
+    E -- No --> F[Tampering Detected]
+    E -- Yes --> G[Proceed to MAC Check]
+    
+    G --> H{MAC Valid?}
+    H -- No --> F
+    H -- Yes --> I[Proceed to Signature Check]
+    
+    I --> J{Signature Valid?}
+    J -- No --> F
+    J -- Yes --> K[Data Integrity Confirmed]
+    
+    C --> L{Deletion Detection}
+    L --> L1[Access Control Verification]
+    L --> L2[Deletion Monitoring]
+    L --> L3[Audit Logging]
+    
+    L1 --> M{Authorized?}
+    M -- No --> N[Unauthorized Deletion Blocked]
+    M -- Yes --> O[Legitimate Deletion]
+    
+    F --> P[Block Access to Modified Data]
+    
+    subgraph "Security Mechanisms"
+        D1
+        D2
+        D3
+        L1
+        L2
+        L3
+    end
+    
+    subgraph "Attack Vectors"
+        B
+        C
+    end
+    
+    subgraph "Defense Responses"
+        P
+    end
+    
+    style A fill:#ff9999,stroke:#333,stroke-width:2px
+    style B fill:#ff9999,stroke:#333,stroke-width:2px
+    style C fill:#ff9999,stroke:#333,stroke-width:2px
+    style F fill:#ff9999,stroke:#333,stroke-width:2px
+    style N fill:#ff9999,stroke:#333,stroke-width:2px
+    
+    style D fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style L fill:#f9f9f9,stroke:#333,stroke-width:2px
+    
+    style D1 fill:#99ccff,stroke:#333,stroke-width:2px
+    style D2 fill:#99ccff,stroke:#333,stroke-width:2px
+    style D3 fill:#99ccff,stroke:#333,stroke-width:2px
+    style L1 fill:#99ccff,stroke:#333,stroke-width:2px
+    style L2 fill:#99ccff,stroke:#333,stroke-width:2px
+    style L3 fill:#99ccff,stroke:#333,stroke-width:2px
+    
+    style P fill:#99ff99,stroke:#333,stroke-width:2px
+    style K fill:#99ff99,stroke:#333,stroke-width:2px
+    style O fill:#99ff99,stroke:#333,stroke-width:2px
